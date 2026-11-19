@@ -1,2 +1,60 @@
 ---
-# Add compliance enforcement tasks here.
+- name: Enforce baseline security compliance
+  hosts: all
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Verify the target is Ubuntu or Debian
+      ansible.builtin.assert:
+        that:
+          - ansible_facts["os_family"] == "Debian"
+        fail_msg: "This playbook supports only Ubuntu and Debian systems."
+
+  tasks:
+    - name: Install firewall and intrusion prevention packages
+      ansible.builtin.apt:
+        name:
+          - ufw
+          - fail2ban
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Allow the Ansible SSH port through UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ ansible_port | default(22) | string }}"
+        proto: tcp
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+
+    - name: Ensure UFW is enabled at boot and running
+      ansible.builtin.service:
+        name: ufw
+        enabled: true
+        state: started
+
+    - name: Ensure fail2ban is enabled at boot and running
+      ansible.builtin.service:
+        name: fail2ban
+        enabled: true
+        state: started
+
+    - name: Disable SSH root login
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^\s*#?\s*PermitRootLogin\s+'
+        line: "PermitRootLogin no"
+        state: present
+        backup: true
+        validate: "/usr/sbin/sshd -t -f %s"
+      notify: Restart SSH
+
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
