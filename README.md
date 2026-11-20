@@ -21,6 +21,15 @@ enforcing baseline security settings on Ubuntu and Debian servers.
 
 > `src/notifier.py` is currently a placeholder and does not send alerts yet.
 
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Control Machine] -->|Ansible via SSH| B[Linux Fleet VMs]
+    B -->|Cron every 15m| C[monitor.py & log_cleaner.py]
+    C -->|Threshold Breached| D[fleet_health.log & .gz Archives]
+```
+
 ## Project Structure
 
 ```text
