@@ -1,0 +1,87 @@
+name: fleet-compliance-lab
+
+x-target: &target
+  image: fleet-compliance-target:local
+  build:
+    context: .
+    dockerfile: Dockerfile.target
+  cap_add:
+    - SYS_ADMIN
+    - NET_ADMIN
+  cgroup: private
+  tmpfs:
+    - /run
+    - /run/lock
+    - /tmp
+  volumes:
+    - ssh-public:/run/lab-public:ro
+  depends_on:
+    controller:
+      condition: service_healthy
+  mem_limit: 512m
+  cpus: 1.0
+  restart: "no"
+  stop_signal: SIGRTMIN+3
+  stop_grace_period: 30s
+  healthcheck:
+    test: ["CMD", "systemctl", "is-active", "--quiet", "ssh"]
+    interval: 5s
+    timeout: 5s
+    start_period: 15s
+    retries: 20
+
+services:
+  controller:
+    image: fleet-compliance-controller:local
+    build:
+      context: .
+      dockerfile: Dockerfile.controller
+    container_name: fleet-lab-controller
+    hostname: controller
+    init: true
+    working_dir: /work
+    environment:
+      ANSIBLE_FORKS: "2"
+      ANSIBLE_HOST_KEY_CHECKING: "True"
+      ANSIBLE_NOCOLOR: "1"
+    volumes:
+      - ../ansible:/work/ansible:ro
+      - ssh-private:/root/.ssh
+      - ssh-public:/lab-public
+    networks:
+      default:
+        ipv4_address: 172.28.93.10
+    mem_limit: 768m
+    cpus: 1.0
+    restart: "no"
+    healthcheck:
+      test: ["CMD-SHELL", "test -s /root/.ssh/id_ed25519 && test -s /lab-public/authorized_keys"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  node1:
+    <<: *target
+    container_name: fleet-lab-node1
+    hostname: node1
+    networks:
+      default:
+        ipv4_address: 172.28.93.11
+  node2:
+    <<: *target
+    container_name: fleet-lab-node2
+    hostname: node2
+    networks:
+      default:
+        ipv4_address: 172.28.93.12
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.93.0/24
+          gateway: 172.28.93.1
+
+volumes:
+  ssh-private:
+  ssh-public:
