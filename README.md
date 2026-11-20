@@ -195,6 +195,11 @@ Verify non-root SSH and sudo access before applying the playbook.
 The committed inventory targets an isolated Docker network. On Windows with
 Docker Desktop, start the lab from PowerShell:
 
+> The lab grants its target containers elevated Linux capabilities and gives
+> the disposable `ansible` user passwordless sudo. Run it only on a trusted
+> local development machine; do not deploy this Compose configuration to
+> production or a shared host.
+
 ```powershell
 .\docker-lab\Start-Lab.ps1
 ```
