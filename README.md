@@ -1,5 +1,9 @@
 # Fleet Health Tool
 
+![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python&logoColor=white)
+![Ansible](https://img.shields.io/badge/Ansible-Compliance-black?logo=ansible)
+![Tests](https://img.shields.io/badge/pytest-7%20passed-brightgreen?logo=pytest)
+
 A Python and Ansible toolkit for monitoring host resources, rotating logs, and
 enforcing baseline security settings on Ubuntu and Debian servers.
 
